@@ -23,7 +23,7 @@ except ImportError:
     )
 
 from auto_gptq import AutoGPTQForCausalLM
-    
+
 from llmzoo.utils import get_default_conv_template, SeparatorStyle
 from llmzoo.deploy.webapp.compression import compress_module
 from llmzoo.deploy.webapp.monkey_patch_non_inplace import replace_llama_attn_with_non_inplace_operations
@@ -31,25 +31,28 @@ from llmzoo.deploy.webapp.monkey_patch_non_inplace import replace_llama_attn_wit
 
 def get_gpu_memory(max_gpus=None):
     gpu_memory = []
-    num_gpus = (
-        torch.cuda.device_count()
-        if max_gpus is None
-        else min(max_gpus, torch.cuda.device_count())
-    )
+    num_gpus = (torch.cuda.device_count() if max_gpus is None else min(max_gpus, torch.cuda.device_count()))
 
     for gpu_id in range(num_gpus):
         with torch.cuda.device(gpu_id):
             device = torch.cuda.current_device()
             gpu_properties = torch.cuda.get_device_properties(device)
-            total_memory = gpu_properties.total_memory / (1024 ** 3)
-            allocated_memory = torch.cuda.memory_allocated() / (1024 ** 3)
+            total_memory = gpu_properties.total_memory / (1024**3)
+            allocated_memory = torch.cuda.memory_allocated() / (1024**3)
             available_memory = total_memory - allocated_memory
             gpu_memory.append(available_memory)
     return gpu_memory
 
 
 def load_model(
-        model_path, device, num_gpus, max_gpu_memory=None, load_8bit=False, load_4bit=False, debug=False
+    model_path,
+    device,
+    num_gpus,
+    max_gpu_memory=None,
+    load_8bit=False,
+    load_4bit=False,
+    debug=False,
+    model_cache=None,
 ):
     if device == "cpu":
         kwargs = {}
@@ -62,9 +65,7 @@ def load_model(
             if num_gpus != 1:
                 kwargs["device_map"] = "auto"
                 if max_gpu_memory is None:
-                    kwargs[
-                        "device_map"
-                    ] = "sequential"  # This is important for not the same VRAM sizes
+                    kwargs["device_map"] = "sequential"  # This is important for not the same VRAM sizes
                     available_gpu_memory = get_gpu_memory(num_gpus)
                     kwargs["max_memory"] = {
                         i: str(int(available_gpu_memory[i] * 0.85)) + "GiB"
@@ -79,6 +80,9 @@ def load_model(
         replace_llama_attn_with_non_inplace_operations()
     else:
         raise ValueError(f"Invalid device: {device}")
+
+    if model_cache is not None:
+        kwargs['cache_dir'] = model_cache
 
     if "google/flan-t5" in model_path:
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=False)
@@ -128,9 +132,7 @@ def generate_stream(model, tokenizer, params, device, context_len=2048, stream_i
     for i in range(max_new_tokens):
         if i == 0:
             if model.config.is_encoder_decoder:
-                encoder_outputs = model.encoder(
-                    input_ids=torch.as_tensor([input_ids], device=device)
-                )
+                encoder_outputs = model.encoder(input_ids=torch.as_tensor([input_ids], device=device))
                 out = model(
                     torch.as_tensor([input_ids], device=device),
                     decoder_input_ids=torch.as_tensor(
@@ -205,6 +207,7 @@ def generate_stream(model, tokenizer, params, device, context_len=2048, stream_i
 
 
 class ChatIO(abc.ABC):
+
     @abc.abstractmethod
     def prompt_for_input(self, role: str) -> str:
         """Prompt for input from a role."""
@@ -219,22 +222,22 @@ class ChatIO(abc.ABC):
 
 
 def chat_loop(
-        model_path: str,
-        device: str,
-        num_gpus: str,
-        max_gpu_memory: str,
-        load_8bit: bool,
-        load_4bit: bool,
-        conv_template: Optional[str],
-        temperature: float,
-        max_new_tokens: int,
-        chatio: ChatIO,
-        debug: bool,
+    model_path: str,
+    device: str,
+    num_gpus: str,
+    max_gpu_memory: str,
+    load_8bit: bool,
+    load_4bit: bool,
+    conv_template: Optional[str],
+    temperature: float,
+    max_new_tokens: int,
+    chatio: ChatIO,
+    debug: bool,
+    model_cache: str,
 ):
     # Model
-    model, tokenizer = load_model(
-        model_path, device, num_gpus, max_gpu_memory, load_8bit, load_4bit, debug
-    )
+    model, tokenizer = load_model(model_path, device, num_gpus, max_gpu_memory, load_8bit, load_4bit, debug,
+                                  model_cache)
 
     # Chat
     if conv_template is None:

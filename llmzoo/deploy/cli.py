@@ -13,6 +13,7 @@ from llmzoo.deploy.webapp.inference import chat_loop, ChatIO
 
 
 class SimpleChatIO(ChatIO):
+
     def prompt_for_input(self, role) -> str:
         return input(f"{role}: ")
 
@@ -33,11 +34,10 @@ class SimpleChatIO(ChatIO):
 
 
 class RichChatIO(ChatIO):
+
     def __init__(self):
         self._prompt_session = PromptSession(history=InMemoryHistory())
-        self._completer = WordCompleter(
-            words=["!exit", "!reset"], pattern=re.compile("$")
-        )
+        self._completer = WordCompleter(words=["!exit", "!reset"], pattern=re.compile("$"))
         self._console = Console()
 
     def prompt_for_input(self, role) -> str:
@@ -111,6 +111,7 @@ def main(args):
             args.max_new_tokens,
             chatio,
             args.debug,
+            args.model_cache,
         )
     except KeyboardInterrupt:
         print("exit...")
@@ -123,6 +124,12 @@ if __name__ == "__main__":
         type=str,
         default="facebook/opt-350m",
         help="The path to the weights",
+    )
+    parser.add_argument(
+        "--model-cache",
+        type=str,
+        default="/data/zhaoliangxuan/model_zoo",
+        help="Path to cached pretrained model",
     )
     parser.add_argument("--device", type=str, choices=["cpu", "cuda", "mps"], default="cuda")
     parser.add_argument("--num-gpus", type=str, default="1")
