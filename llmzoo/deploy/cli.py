@@ -142,7 +142,7 @@ if __name__ == "__main__":
     parser.add_argument("--load-4bit", action="store_true", help="Use 4-bit quantization.")
     parser.add_argument("--conv-template", type=str, default=None, help="Conversation prompt template.")
     parser.add_argument("--temperature", type=float, default=0.7)
-    parser.add_argument("--max-new-tokens", type=int, default=512)
+    parser.add_argument("--max-new-tokens", type=int, default=2048)
     parser.add_argument("--style", type=str, default="simple", choices=["simple", "rich"], help="Display style.")
     parser.add_argument("--debug", action="store_true")
     args = parser.parse_args()

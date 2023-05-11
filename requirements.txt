@@ -13,3 +13,4 @@ markdown2[all]
 requests
 prompt_toolkit
 rich
+auto-gptq

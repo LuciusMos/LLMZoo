@@ -22,7 +22,7 @@ except ImportError:
         AutoModelForSeq2SeqLM,
     )
 
-from auto_gptq import AutoGPTQForCausalLM
+# from auto_gptq import AutoGPTQForCausalLM
 
 from llmzoo.utils import get_default_conv_template, SeparatorStyle
 from llmzoo.deploy.webapp.compression import compress_module
@@ -97,7 +97,8 @@ def load_model(
     else:
         tokenizer = AutoTokenizer.from_pretrained(model_path, use_fast=True)
         if load_4bit:
-            model = AutoGPTQForCausalLM.from_quantized(model_path, device, use_triton=True)
+            # model = AutoGPTQForCausalLM.from_quantized(model_path, device, use_triton=True)
+            raise ImportError('cannot install auto_gptq')
         else:
             model = AutoModelForCausalLM.from_pretrained(model_path, low_cpu_mem_usage=True, **kwargs)
 
